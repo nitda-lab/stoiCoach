@@ -80,7 +80,7 @@ export function validateItemInput(raw: unknown): ValidationResult {
     value: {
       title: title.trim(),
       tracking_type: tt,
-      config: config as ItemInput['config'],
+      config: config as unknown as ItemInput['config'],
       point_weight,
     },
   };
