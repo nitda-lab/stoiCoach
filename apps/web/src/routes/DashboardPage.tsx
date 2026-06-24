@@ -1,35 +1,54 @@
-import { useItems } from '../lib/useItems';
+import { useState } from 'react';
+import { useSummary, useComplete } from '../lib/useSummary';
+import { ItemCard } from '../components/ItemCard';
+
+type Period = 'today' | 'week' | 'month';
+const PERIOD_LABEL: Record<Period, string> = { today: '今日', week: '週', month: '月' };
 
 export function DashboardPage() {
-  const { data: items, isLoading, error } = useItems();
+  const { data, isLoading, error } = useSummary();
+  const complete = useComplete();
+  const [period, setPeriod] = useState<Period>('today');
+
+  const periodPoints = data ? data.points[period] : 0;
 
   return (
     <div className="dashboard">
       <div className="dashboard__header">
-        <span className="dashboard__points">🔥 累計 0 pt</span>
+        <div className="dashboard__points">
+          <span className="dashboard__points-period">{PERIOD_LABEL[period]} {periodPoints} pt</span>
+          <span className="dashboard__points-total">🔥 累計 {data?.points.total ?? 0} pt</span>
+        </div>
         <div className="dashboard__tabs">
-          <button className="tab tab--active">今日</button>
-          <button className="tab">週</button>
-          <button className="tab">月</button>
+          {(['today', 'week', 'month'] as Period[]).map((p) => (
+            <button
+              key={p}
+              className={`tab${p === period ? ' tab--active' : ''}`}
+              onClick={() => setPeriod(p)}
+            >
+              {PERIOD_LABEL[p]}
+            </button>
+          ))}
         </div>
       </div>
 
       {isLoading && <p>読み込み中…</p>}
       {error && <p className="error">読み込みに失敗しました: {error.message}</p>}
 
-      {items && items.length === 0 && (
+      {data && data.items.length === 0 && (
         <p className="dashboard__empty">
           まだ管理項目がありません。チャットでAIに目標を伝えると、ここに表示されます。
         </p>
       )}
 
       <ul className="item-list">
-        {items?.map((item) => (
-          <li key={item.id} className="item-card">
-            <input type="checkbox" disabled />
-            <span className="item-card__title">{item.title}</span>
-            <span className="item-card__points">+{item.point_weight}pt</span>
-          </li>
+        {data?.items.map((item) => (
+          <ItemCard
+            key={item.id}
+            item={item}
+            busy={complete.isPending}
+            onComplete={(id) => complete.mutate(id)}
+          />
         ))}
       </ul>
     </div>
