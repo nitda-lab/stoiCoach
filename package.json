@@ -1,0 +1,13 @@
+{
+  "name": "stoicoach",
+  "private": true,
+  "type": "module",
+  "workspaces": ["apps/*"],
+  "scripts": {
+    "dev:api": "bun run --cwd apps/api dev",
+    "dev:web": "bun run --cwd apps/web dev",
+    "test": "bun test apps/api/src",
+    "typecheck": "bun run --cwd apps/api typecheck && bun run --cwd apps/web typecheck",
+    "migrate": "bun run apps/api/src/db/migrate.ts"
+  }
+}
