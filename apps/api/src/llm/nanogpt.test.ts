@@ -8,13 +8,13 @@ afterEach(() => {
 });
 
 function mockFetch(responseBody: unknown, capture?: (req: Request) => void) {
-  globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
-    if (capture) capture(new Request(input as string, init));
+  globalThis.fetch = (async (input: string | URL, init?: RequestInit) => {
+    if (capture) capture(new Request(String(input), init));
     return new Response(JSON.stringify(responseBody), {
       status: 200,
       headers: { 'Content-Type': 'application/json' },
     });
-  }) as typeof fetch;
+  }) as unknown as typeof fetch;
 }
 
 const messages: ChatMessage[] = [{ role: 'user', content: 'hello' }];
@@ -86,7 +86,7 @@ describe('complete', () => {
 
   test('throws on non-2xx', async () => {
     globalThis.fetch = (async () =>
-      new Response('boom', { status: 500 })) as typeof fetch;
+      new Response('boom', { status: 500 })) as unknown as typeof fetch;
     await expect(
       complete(messages, tools, { apiKey: 'k', baseUrl: 'https://x.test/v1', model: 'm' }),
     ).rejects.toThrow();
