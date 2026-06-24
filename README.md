@@ -65,6 +65,6 @@ bun run typecheck        # api + web の型チェック
 
 ## 進捗
 - [x] **Plan 1** 土台: モノレポ・API・Neonスキーマ・認証・Webスケルトン
-- [ ] **Plan 2** チャット + nanoGPTツール実行（create/update/complete/...）
+- [x] **Plan 2** チャット + nanoGPTツール実行（create/update/complete/archive/list、`POST /api/chat`、チャットUI）
 - [ ] **Plan 3** ダッシュボード + 期間別ポイント集計
-- [ ] 将来: ランキング / 通知
+- [ ] 将来: ランキング / 通知 / チャット履歴の永続化
