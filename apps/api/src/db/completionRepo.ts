@@ -35,15 +35,15 @@ export async function listCompletions(
   `) as Completion[];
 }
 
-/** Minimal completion rows (item_id + YYYY-MM-DD date) for summary building. */
+/** Completion rows (item_id, YYYY-MM-DD date, points) for summary building. */
 export async function listCompletionRows(
   userId: string,
-): Promise<{ item_id: string; date: string }[]> {
+): Promise<{ item_id: string; date: string; points_earned: number }[]> {
   const sql = getSql();
   return (await sql`
-    SELECT item_id, date::text AS date
+    SELECT item_id, date::text AS date, points_earned
     FROM completions
     WHERE clerk_user_id = ${userId}
     ORDER BY date DESC
-  `) as { item_id: string; date: string }[];
+  `) as { item_id: string; date: string; points_earned: number }[];
 }
