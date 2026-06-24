@@ -37,6 +37,43 @@ describe('api app', () => {
     expect(res.status).toBe(401);
   });
 
+  test('GET /api/summary without a token is 401', async () => {
+    const res = await app.request('/api/summary');
+    expect(res.status).toBe(401);
+  });
+
+  test.skipIf(!process.env.DATABASE_URL)(
+    'GET /api/summary returns points + items for a valid user',
+    async () => {
+      const res = await app.request('/api/summary', {
+        headers: { Authorization: 'Bearer good' },
+      });
+      expect(res.status).toBe(200);
+      const body = (await res.json()) as {
+        points: { today: number; week: number; month: number; total: number };
+        items: unknown[];
+      };
+      expect(typeof body.points.total).toBe('number');
+      expect(Array.isArray(body.items)).toBe(true);
+    },
+  );
+
+  test('POST /api/items/:id/complete without a token is 401', async () => {
+    const res = await app.request('/api/items/abc/complete', { method: 'POST' });
+    expect(res.status).toBe(401);
+  });
+
+  test.skipIf(!process.env.DATABASE_URL)(
+    'POST /api/items/:id/complete on a missing item is 404',
+    async () => {
+      const res = await app.request(
+        '/api/items/00000000-0000-0000-0000-000000000000/complete',
+        { method: 'POST', headers: { Authorization: 'Bearer good' } },
+      );
+      expect(res.status).toBe(404);
+    },
+  );
+
   test('POST /api/chat without a token is 401', async () => {
     const res = await appWithChat.request('/api/chat', {
       method: 'POST',

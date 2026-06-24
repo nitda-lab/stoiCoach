@@ -7,7 +7,9 @@ import {
   type VerifyToken,
   type AppVariables,
 } from './middleware/auth';
-import { listItems } from './db/itemRepo';
+import { listItems, getItem } from './db/itemRepo';
+import { addCompletion, listCompletionRows } from './db/completionRepo';
+import { buildSummary } from './summary/summaryService';
 import { runChat as realRunChat, type RunChatResult } from './chat/chatService';
 import type { ChatMessage } from './llm/messages';
 
@@ -51,6 +53,26 @@ export function createApp(deps: AppDeps = {}) {
   api.get('/items', async (c) => {
     const items = await listItems(c.get('userId'));
     return c.json({ items });
+  });
+
+  api.get('/summary', async (c) => {
+    const userId = c.get('userId');
+    const [items, completionRows] = await Promise.all([
+      listItems(userId),
+      listCompletionRows(userId),
+    ]);
+    return c.json(buildSummary({ items, completionRows, today: todayStr() }));
+  });
+
+  api.post('/items/:id/complete', async (c) => {
+    const userId = c.get('userId');
+    const id = c.req.param('id');
+    const item = await getItem(userId, id);
+    if (!item) return c.json({ error: 'item not found' }, 404);
+    const body = (await c.req.json().catch(() => ({}))) as { date?: string };
+    const date = body.date ?? todayStr();
+    const completion = await addCompletion(userId, id, date, item.point_weight);
+    return c.json({ completion });
   });
 
   api.post('/chat', async (c) => {
