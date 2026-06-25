@@ -49,7 +49,10 @@ export async function runChat(
 ): Promise<RunChatResult> {
   const complete = deps.complete ?? ((m, t) => realComplete(m, t));
   const execute = deps.execute ?? realExecute;
-  const maxRounds = deps.maxRounds ?? 5;
+  // Each round is one nanoGPT call. With local synthesis of write confirmations,
+  // a normal turn finishes in 1 round; cap at 2 so total stays well under
+  // Vercel's 60s function limit even if a round is slow.
+  const maxRounds = deps.maxRounds ?? 2;
 
   const messages: ChatMessage[] = [
     { role: 'system', content: SYSTEM_PROMPT },

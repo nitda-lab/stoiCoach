@@ -106,6 +106,36 @@ function asString(v: unknown): string | undefined {
   return typeof v === 'string' && v.length > 0 ? v : undefined;
 }
 
+/** Fill in sensible config defaults per tracking_type so that sparse model
+ *  output (e.g. a recurring habit without an explicit cadence) still passes
+ *  validation and creates an item in a single round. */
+function withConfigDefaults(
+  args: Record<string, unknown>,
+  today: string,
+): Record<string, unknown> {
+  const config: Record<string, unknown> =
+    args.config && typeof args.config === 'object' && !Array.isArray(args.config)
+      ? { ...(args.config as Record<string, unknown>) }
+      : {};
+  switch (args.tracking_type) {
+    case 'recurring':
+      config.cadence ??= 'daily';
+      config.target_per_period ??= 1;
+      break;
+    case 'one_time':
+      config.due_date ??= today;
+      break;
+    case 'avoidance':
+      config.since ??= today;
+      break;
+    case 'progress':
+      config.milestones ??= [];
+      config.percent ??= 0;
+      break;
+  }
+  return { ...args, config };
+}
+
 /** Execute a tool call against the user's data. Never throws on bad input —
  *  returns `{result:{error}}` so the model can recover. */
 export async function executeTool(
@@ -117,7 +147,7 @@ export async function executeTool(
   try {
     switch (name) {
       case 'create_item': {
-        const v = validateItemInput(args);
+        const v = validateItemInput(withConfigDefaults(args, today));
         if (!v.ok) return { result: { error: v.error } };
         const item = await createItem(userId, v.value);
         return { result: item, action: { type: 'created', item } };

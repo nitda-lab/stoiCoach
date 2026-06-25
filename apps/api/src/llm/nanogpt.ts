@@ -6,6 +6,7 @@ export interface CompleteOptions {
   baseUrl?: string;
   model?: string;
   temperature?: number;
+  timeoutMs?: number;
 }
 
 interface OpenAIToolCall {
@@ -56,14 +57,29 @@ export async function complete(
     body.tool_choice = 'auto';
   }
 
-  const res = await fetch(`${baseUrl}/chat/completions`, {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(body),
-  });
+  // Bound a single call so one slow response can't consume the whole serverless
+  // budget (Vercel kills the function at its maxDuration).
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), opts.timeoutMs ?? 25_000);
+  let res: Response;
+  try {
+    res = await fetch(`${baseUrl}/chat/completions`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(body),
+      signal: controller.signal,
+    });
+  } catch (err) {
+    if (err instanceof Error && err.name === 'AbortError') {
+      throw new Error('nanoGPT request timed out');
+    }
+    throw err;
+  } finally {
+    clearTimeout(timeout);
+  }
 
   if (!res.ok) {
     const text = await res.text().catch(() => '');
