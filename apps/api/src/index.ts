@@ -100,11 +100,3 @@ function safeWebOrigin(): string {
     return 'http://localhost:5173';
   }
 }
-
-// Entrypoint (only when run directly, not when imported by tests).
-if (import.meta.main) {
-  const app = createApp();
-  const port = config.port();
-  console.log(`stoiCoach API listening on http://localhost:${port}`);
-  Bun.serve({ port, fetch: app.fetch });
-}

@@ -1,4 +1,6 @@
-const BASE = import.meta.env.VITE_API_URL ?? 'http://localhost:8787';
+// Empty default = same-origin relative requests (production single-project deploy).
+// Local dev sets VITE_API_URL=http://localhost:8787 in apps/web/.env.local.
+const BASE = import.meta.env.VITE_API_URL ?? '';
 
 export type GetToken = () => Promise<string | null>;
 

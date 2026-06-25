@@ -63,6 +63,29 @@ bun run typecheck        # api + web の型チェック
 ドメインロジック（項目検証・ポイント集計・ストリーク）はDB不要で動作。
 リポジトリ層の統合テストは `DATABASE_URL` がある時のみ実行。
 
+## Vercelデプロイ（単一プロジェクト）
+
+webの静的サイトと、Hono APIを **Edgeサーバーレス関数**（`api/[[...route]].ts`）として
+1つのVercelプロジェクトで配信する。同一オリジンなのでCORS不要。
+
+設定は [vercel.json](vercel.json) に集約済み（ビルドコマンド・出力先・SPAフォールバック）。
+
+### VercelダッシュボードでのImport手順
+1. https://vercel.com → **Add New → Project** → GitHubの `nitda-lab/stoiCoach` をImport。
+2. **Root Directory**: `./`（リポジトリルートのまま）。Framework Preset は **Other**（vercel.jsonが制御）。
+3. **Environment Variables** を設定:
+   - `DATABASE_URL` — Neon接続文字列
+   - `CLERK_SECRET_KEY` — Clerk secret (`sk_...`)
+   - `NANOGPT_API_KEY` — nanoGPT key (`sk-nano-...`)
+   - `NANOGPT_BASE_URL` — `https://nano-gpt.com/api/v1`
+   - `NANOGPT_MODEL` — `openai/gpt-oss-120b`
+   - `VITE_CLERK_PUBLISHABLE_KEY` — Clerk publishable (`pk_...`)（ビルド時に必要）
+   - （`VITE_API_URL` は不要 — 本番は同一オリジンの相対パス）
+4. **Deploy**。以後は `main` へのpushで自動デプロイ。
+5. デプロイ後、ClerkダッシュボードでVercelのドメインを許可（Allowed origins）に追加。
+
+> APIキーは会話履歴に残っているため、本番投入前に各サービスでローテーション推奨。
+
 ## 進捗
 - [x] **Plan 1** 土台: モノレポ・API・Neonスキーマ・認証・Webスケルトン
 - [x] **Plan 2** チャット + nanoGPTツール実行（create/update/complete/archive/list、`POST /api/chat`、チャットUI）
