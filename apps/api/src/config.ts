@@ -19,7 +19,7 @@ export const config = {
   clerkSecretKey: () => required('CLERK_SECRET_KEY'),
   nanoGptApiKey: () => required('NANOGPT_API_KEY'),
   nanoGptBaseUrl: () => optional('NANOGPT_BASE_URL', 'https://nano-gpt.com/api/v1'),
-  nanoGptModel: () => optional('NANOGPT_MODEL', 'claude-3-5-sonnet'),
+  nanoGptModel: () => optional('NANOGPT_MODEL', 'qwen/qwen3-30b-a3b'),
   webOrigin: () => optional('WEB_ORIGIN', 'http://localhost:5173'),
   port: () => Number(optional('PORT', '8787')),
 };
