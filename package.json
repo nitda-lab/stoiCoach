@@ -8,6 +8,11 @@
     "dev:web": "bun run --cwd apps/web dev",
     "test": "bun test apps/api/src",
     "typecheck": "bun run --cwd apps/api typecheck && bun run --cwd apps/web typecheck",
-    "migrate": "bun run apps/api/src/db/migrate.ts"
+    "migrate": "bun run apps/api/src/db/migrate.ts",
+    "build:fn": "node scripts/build-fn.mjs",
+    "vercel-build": "npm run build --workspace @stoicoach/web && npm run build:fn"
+  },
+  "devDependencies": {
+    "esbuild": "^0.24.0"
   }
 }

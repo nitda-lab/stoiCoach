@@ -9,3 +9,4 @@ build/
 bun.lockb
 *.tsbuildinfo
 .vercel
+api/app.mjs

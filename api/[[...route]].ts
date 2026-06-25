@@ -1,11 +1,7 @@
-import { handle } from 'hono/vercel';
-import { createApp } from '../apps/api/src/index';
-
-// Run on Vercel's Node.js runtime (default): @clerk/backend pulls in node:crypto,
-// which the Edge runtime does not provide. Neon's serverless driver and the
-// fetch-based nanoGPT calls work fine on Node.
+// @ts-nocheck — the handler is bundled into ./app.mjs at build time
+// (scripts/build-fn.mjs). This thin file is what Vercel detects as the
+// Node serverless function; app.mjs is self-contained, so there is no
+// cross-package module resolution at runtime.
 export const config = { runtime: 'nodejs' };
 
-const app = createApp();
-
-export default handle(app);
+export { default } from './app.mjs';
