@@ -71,9 +71,13 @@ export async function runChat(
       return { reply, actions, messages };
     }
 
+    const roundActions: ToolAction[] = [];
     for (const call of assistant.tool_calls) {
       const outcome = await execute(userId, call.name, parseArgs(call.arguments), deps.today);
-      if (outcome.action) actions.push(outcome.action);
+      if (outcome.action) {
+        actions.push(outcome.action);
+        roundActions.push(outcome.action);
+      }
       messages.push({
         role: 'tool',
         tool_call_id: call.id,
@@ -81,6 +85,16 @@ export async function runChat(
         content: JSON.stringify(outcome.result),
       });
     }
+
+    // Write actions (create/update/complete/archive) produced a concrete result.
+    // Synthesize the confirmation locally instead of paying for another LLM
+    // round-trip — this halves latency on the common "add/complete" turns.
+    if (roundActions.length > 0) {
+      reply = synthesizeReply(roundActions);
+      return { reply, actions, messages };
+    }
+    // Otherwise the tools were read-only (e.g. list_items); loop so the model
+    // can answer using the results.
   }
 
   // Hit the round cap while still calling tools: ask once more for a summary.
@@ -88,4 +102,25 @@ export async function runChat(
     reply ||
     'リクエストを処理しました。ダッシュボードで確認してください。';
   return { reply, actions, messages };
+}
+
+/** Build a short Japanese confirmation from the executed write actions,
+ *  avoiding a second LLM call. */
+function synthesizeReply(actions: ToolAction[]): string {
+  const lines = actions.map((a) => {
+    const title = a.item?.title ?? '項目';
+    const pts = a.item?.point_weight;
+    const ptSuffix = pts ? `(+${pts}pt)` : '';
+    switch (a.type) {
+      case 'created':
+        return `「${title}」を追加しました${ptSuffix}。`;
+      case 'completed':
+        return `「${title}」の達成を記録しました${ptSuffix}。`;
+      case 'updated':
+        return `「${title}」を更新しました。`;
+      case 'archived':
+        return `「${title}」をアーカイブしました。`;
+    }
+  });
+  return lines.join('\n');
 }

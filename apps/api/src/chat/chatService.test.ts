@@ -43,7 +43,7 @@ describe('runChat', () => {
     expect(llm.calls[0]![0]!.role).toBe('system');
   });
 
-  test('executes a tool call, feeds the result back, and returns the final reply + action', async () => {
+  test('executes a write tool and synthesizes the reply without a second LLM call', async () => {
     const llm = scriptedComplete([
       {
         content: '',
@@ -51,18 +51,33 @@ describe('runChat', () => {
           { id: 'c1', name: 'create_item', arguments: '{"title":"朝ラン"}' },
         ],
       },
-      { content: '朝ランを追加しました！', tool_calls: [] },
     ]);
     const out = await runChat('u1', [{ role: 'user', content: '朝ランやりたい' }], {
       complete: llm.fn,
       execute: fakeExecute,
       today: '2026-06-25',
     });
-    expect(out.reply).toBe('朝ランを追加しました！');
     expect(out.actions).toHaveLength(1);
     expect(out.actions[0]!.type).toBe('created');
-    // second LLM call must include the tool result message
-    expect(llm.calls[1]!.some((m) => m.role === 'tool')).toBe(true);
+    expect(out.reply).toContain('朝ラン');
+    expect(out.reply).toContain('追加しました');
+    // only ONE LLM round-trip: the write action is confirmed locally
+    expect(llm.calls).toHaveLength(1);
+  });
+
+  test('makes a follow-up LLM call when tools were read-only (no actions)', async () => {
+    const readOnlyExecute = async () => ({ result: { items: [] } }); // no action
+    const llm = scriptedComplete([
+      { content: '', tool_calls: [{ id: 'c1', name: 'list_items', arguments: '{}' }] },
+      { content: '今日はまだ項目がありません。', tool_calls: [] },
+    ]);
+    const out = await runChat('u1', [{ role: 'user', content: '状況は？' }], {
+      complete: llm.fn,
+      execute: readOnlyExecute,
+      today: '2026-06-25',
+    });
+    expect(out.reply).toBe('今日はまだ項目がありません。');
+    expect(llm.calls).toHaveLength(2);
   });
 
   test('stops at maxRounds even if the model keeps calling tools', async () => {
@@ -87,13 +102,13 @@ describe('runChat', () => {
         content: '',
         tool_calls: [{ id: 'c1', name: 'create_item', arguments: 'not json' }],
       },
-      { content: 'done', tool_calls: [] },
     ]);
     const out = await runChat('u1', [{ role: 'user', content: 'x' }], {
       complete: llm.fn,
       execute: fakeExecute,
       today: '2026-06-25',
     });
-    expect(out.reply).toBe('done');
+    expect(typeof out.reply).toBe('string');
+    expect(out.reply.length).toBeGreaterThan(0);
   });
 });
