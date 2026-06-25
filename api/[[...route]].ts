@@ -1,9 +1,10 @@
 import { handle } from 'hono/vercel';
 import { createApp } from '../apps/api/src/index';
 
-// Run on Vercel's Edge runtime: Hono, the Neon serverless driver, @clerk/backend
-// (Web Crypto) and fetch-based nanoGPT calls are all edge-compatible.
-export const config = { runtime: 'edge' };
+// Run on Vercel's Node.js runtime (default): @clerk/backend pulls in node:crypto,
+// which the Edge runtime does not provide. Neon's serverless driver and the
+// fetch-based nanoGPT calls work fine on Node.
+export const config = { runtime: 'nodejs20.x' };
 
 const app = createApp();
 
